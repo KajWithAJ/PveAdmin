@@ -20,7 +20,7 @@ namespace Oxide.Plugins
         private const string webhookURL = "https://discord.com/api/webhooks/WEBHOOK_TOKEN";
 
         private bool isInit = false;
-        Dictionary<uint, StorageType> itemTracker = new Dictionary<uint, StorageType>();
+        Dictionary<ulong, StorageType> itemTracker = new Dictionary<ulong, StorageType>();
 
         private const string PermissionExcludeLooters = "pveadmin.exclude.looters";
         private const string PermissionExcludeLadders = "pveadmin.exclude.ladders";
@@ -36,13 +36,13 @@ namespace Oxide.Plugins
             if (isInit)
             {
                 if (item == null) return;
-                if (item.uid == 0) return;
+                if (item.uid.Value == 0) return;
                 if (container.playerOwner != null)
                 {
-                    if (itemTracker.ContainsKey(item.uid))
+                    if (itemTracker.ContainsKey(item.uid.Value))
                     {
                         var player = container.playerOwner;
-                        var data = itemTracker[item.uid];
+                        var data = itemTracker[item.uid.Value];
                         if (string.IsNullOrEmpty(data.type) || data.type == "BasePlayer") return;
                         if (player.userID != data.ownerID && !IsInExcludeList(data.ownerID)) {
 
@@ -65,14 +65,14 @@ namespace Oxide.Plugins
                                 }
                             }
                         }
-                        itemTracker.Remove(item.uid);
+                        itemTracker.Remove(item.uid.Value);
                     }
                 }
                 else if (container.entityOwner != null)
                 {
-                    if (itemTracker.ContainsKey(item.uid))
+                    if (itemTracker.ContainsKey(item.uid.Value))
                     {
-                        var data = itemTracker[item.uid];
+                        var data = itemTracker[item.uid.Value];
                         string type = "";
                         if (container.entityOwner is StorageContainer)
                             type = "StorageContainer";
@@ -114,7 +114,7 @@ namespace Oxide.Plugins
                             }
                         }
 
-                        itemTracker.Remove(item.uid);
+                        itemTracker.Remove(item.uid.Value);
                     }
                 }
             }
@@ -124,7 +124,7 @@ namespace Oxide.Plugins
         {
             if (isInit)
             {
-                if (item == null || (item.uid == 0)) return;
+                if (item == null || (item.uid.Value == 0)) return;
                 if (container.entityOwner != null)
                 {
                     var entity = container.entityOwner;
@@ -134,7 +134,7 @@ namespace Oxide.Plugins
                     var storageData = new StorageType
                     {
                         entityName = entity.ShortPrefabName,
-                        entityID = entity.net.ID.ToString(),
+                        entityID = entity.net.ID.Value.ToString(),
                         itemAmount = item.amount,
                         itemName = item.info.displayName.english,
                         location = entity.transform.position.ToString("F1"),
@@ -163,14 +163,14 @@ namespace Oxide.Plugins
 
                     if (string.IsNullOrEmpty(storageData.type)) return;
 
-                    if (!itemTracker.ContainsKey(item.uid))
+                    if (!itemTracker.ContainsKey(item.uid.Value))
                     {
-                        itemTracker.Add(item.uid, storageData);
+                        itemTracker.Add(item.uid.Value, storageData);
 
                         timer.Once(5, () =>
                         {
-                            if (itemTracker.ContainsKey(item.uid))
-                                itemTracker.Remove(item.uid);
+                            if (itemTracker.ContainsKey(item.uid.Value))
+                                itemTracker.Remove(item.uid.Value);
                         });
                     }
                 }
@@ -181,7 +181,7 @@ namespace Oxide.Plugins
                     var storageData = new StorageType
                     {
                         entityName = entity.displayName,
-                        entityID = entity.net.ID.ToString(),
+                        entityID = entity.net.ID.Value.ToString(),
                         itemAmount = item.amount,
                         itemName = item.info.displayName.english,
                         type = "BasePlayer",
@@ -189,14 +189,14 @@ namespace Oxide.Plugins
                         gridLocation = PhoneController.PositionToGridCoord(entity.transform.position),
                         ownerID = entity.userID
                     };
-                    if (!itemTracker.ContainsKey(item.uid))
+                    if (!itemTracker.ContainsKey(item.uid.Value))
                     {
-                        itemTracker.Add(item.uid, storageData);
+                        itemTracker.Add(item.uid.Value, storageData);
 
                         timer.Once(5, () =>
                         {
-                            if (itemTracker.ContainsKey(item.uid))
-                                itemTracker.Remove(item.uid);
+                            if (itemTracker.ContainsKey(item.uid.Value))
+                                itemTracker.Remove(item.uid.Value);
                         });
                     }
                 }
