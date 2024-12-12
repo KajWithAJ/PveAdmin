@@ -37,6 +37,7 @@ namespace Oxide.Plugins
             {
                 if (item == null) return;
                 if (item.uid.Value == 0) return;
+                if (IsExcludedItem(item)) return;
                 if (container.playerOwner != null)
                 {
                     if (itemTracker.ContainsKey(item.uid.Value))
@@ -56,7 +57,7 @@ namespace Oxide.Plugins
 
                                         var owner = GetDisplayName(data.ownerID.ToString());
 
-                                        var message = $"{player.displayName} ({player.userID}) looted {data.itemAmount}x {data.itemName} from {data.type} of player {owner} ({data.ownerID}) at location {data.location}";
+                                        var message = $"[{DateTime.Now}] {player.displayName} ({player.userID}) looted {data.itemAmount}x {data.itemName} from {data.type} of player {owner} ({data.ownerID}) at location {data.location}";
 
                                         Puts(message);
                                         LogToFile("looters", message, this);
@@ -103,8 +104,8 @@ namespace Oxide.Plugins
                                         if (depositor == null || depositor.Team == null || !depositor.Team.members.Contains(container.entityOwner.OwnerID)) {
                                             var owner = GetDisplayName(container.entityOwner.OwnerID.ToString());
                                             var location = container.entityOwner.transform.position;
-                                            var gridLocation = PhoneController.PositionToGridCoord(location);
-                                            var message = $"{data.entityName} ({data.ownerID}) deposited {data.itemAmount}x {data.itemName} to {type} of player {GetDisplayName(container.entityOwner.OwnerID.ToString())} ({container.entityOwner.OwnerID}) at location {location.ToString("F1")}";
+                                            var gridLocation = MapHelper.PositionToGrid(location).ToString();
+                                            var message = $"[{DateTime.Now}] {data.entityName} ({data.ownerID}) deposited {data.itemAmount}x {data.itemName} to {type} of player {GetDisplayName(container.entityOwner.OwnerID.ToString())} ({container.entityOwner.OwnerID}) at location {location.ToString("F1")}";
                                             Puts(message);
                                             LogToFile("looters", message, this);
                                             SendDiscordDepositMessage(data.entityName, owner, data.itemName, data.itemAmount, type, location.ToString("F1"), gridLocation);
@@ -124,7 +125,7 @@ namespace Oxide.Plugins
         {
             if (isInit)
             {
-                if (item == null || (item.uid.Value == 0)) return;
+                if (item == null || (item.uid.Value == 0) || (IsExcludedItem(item))) return;
                 if (container.entityOwner != null)
                 {
                     var entity = container.entityOwner;
@@ -138,7 +139,7 @@ namespace Oxide.Plugins
                         itemAmount = item.amount,
                         itemName = item.info.displayName.english,
                         location = entity.transform.position.ToString("F1"),
-                        gridLocation = PhoneController.PositionToGridCoord(entity.transform.position),
+                        gridLocation = MapHelper.PositionToGrid(entity.transform.position).ToString(),
                         ownerID = entity.OwnerID
                     };
                     
@@ -158,6 +159,9 @@ namespace Oxide.Plugins
                     if (entity is VendingMachine) {
                         storageData.type = "VendingMachine";
                         if (((VendingMachine) entity).transactionActive) return;
+                    }
+                    if (entity is BuildingPrivlidge) {
+                        storageData.type = "ToolCupboard";
                     }
                         
 
@@ -186,7 +190,7 @@ namespace Oxide.Plugins
                         itemName = item.info.displayName.english,
                         type = "BasePlayer",
                         location = entity.transform.position.ToString("0"),
-                        gridLocation = PhoneController.PositionToGridCoord(entity.transform.position),
+                        gridLocation = MapHelper.PositionToGrid(entity.transform.position).ToString(),
                         ownerID = entity.userID
                     };
                     if (!itemTracker.ContainsKey(item.uid.Value))
@@ -208,14 +212,14 @@ namespace Oxide.Plugins
             if (player == null) return null;
             if (prefab.fullName.Contains("ladder.wooden.wall")) {
                 var location = target.entity.transform.position;
-                var gridLocation = PhoneController.PositionToGridCoord(location);
+                var gridLocation = MapHelper.PositionToGrid(location);
 
                 var ownerID = target.entity.OwnerID;
 
                 if (player.userID != ownerID && ownerID != 0) {
                     if (!permission.UserHasPermission(player.userID.ToString(), PermissionExcludeLadders)) {
                         if (player.Team == null || !player.Team.members.Contains(ownerID)) {
-                            var message = $"{player.displayName} ({player.userID}) placed a ladder at base of player {GetDisplayName(ownerID.ToString())} ({ownerID}) at location {gridLocation} {location.ToString("F1")}";
+                            var message = $"[{DateTime.Now}] {player.displayName} ({player.userID}) placed a ladder at base of player {GetDisplayName(ownerID.ToString())} ({ownerID}) at location {gridLocation} {location.ToString("F1")}";
                             Puts(message);
                             LogToFile("ladders", message, this);
                         }
@@ -285,6 +289,10 @@ namespace Oxide.Plugins
 
         private bool IsInExcludeList(ulong OwnerID) {
             return _config.ExcludeList.Contains(OwnerID.ToString());
+        }
+
+        private bool IsExcludedItem(Item item) {
+            return _config.ExcludedItems.Contains(item.info.shortname);
         }
 
         class StorageType
@@ -362,6 +370,9 @@ namespace Oxide.Plugins
 
             [JsonProperty(PropertyName = "Friendly players")]
             public string[] FriendlyPlayers { get; set; }
+
+            [JsonProperty(PropertyName = "Item shortname excludes")]
+            public string[] ExcludedItems { get; set; }
         }
 
         protected override void LoadConfig() {
@@ -384,7 +395,8 @@ namespace Oxide.Plugins
         private ConfigData GetBaseConfig() {
             return new ConfigData {
                 ExcludeList = new string[] {},
-                FriendlyPlayers = new string[] {}
+                FriendlyPlayers = new string[] {},
+                ExcludedItems = new string[] {}
             };
         }
         #endregion
