@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace Oxide.Plugins
 {
-    [Info("PveAdmin", "KajWithAJ", "0.0.1")]
+    [Info("PveAdmin", "KajWithAJ", "0.1.0")]
     [Description("Set of tools to manage a PVE server.")]
 
     class PveAdmin : RustPlugin
@@ -104,7 +104,7 @@ namespace Oxide.Plugins
                                         if (depositor == null || depositor.Team == null || !depositor.Team.members.Contains(container.entityOwner.OwnerID)) {
                                             var owner = GetDisplayName(container.entityOwner.OwnerID.ToString());
                                             var location = container.entityOwner.transform.position;
-                                            var gridLocation = MapHelper.PositionToGrid(location).ToString();
+                                            var gridLocation = MapHelper.PositionToString(location);
                                             var message = $"[{DateTime.Now}] {data.entityName} ({data.ownerID}) deposited {data.itemAmount}x {data.itemName} to {type} of player {GetDisplayName(container.entityOwner.OwnerID.ToString())} ({container.entityOwner.OwnerID}) at location {location.ToString("F1")}";
                                             Puts(message);
                                             LogToFile("looters", message, this);
@@ -139,7 +139,7 @@ namespace Oxide.Plugins
                         itemAmount = item.amount,
                         itemName = item.info.displayName.english,
                         location = entity.transform.position.ToString("F1"),
-                        gridLocation = MapHelper.PositionToGrid(entity.transform.position).ToString(),
+                        gridLocation = MapHelper.PositionToString(entity.transform.position),
                         ownerID = entity.OwnerID
                     };
                     
@@ -190,7 +190,7 @@ namespace Oxide.Plugins
                         itemName = item.info.displayName.english,
                         type = "BasePlayer",
                         location = entity.transform.position.ToString("0"),
-                        gridLocation = MapHelper.PositionToGrid(entity.transform.position).ToString(),
+                        gridLocation = MapHelper.PositionToString(entity.transform.position),
                         ownerID = entity.userID
                     };
                     if (!itemTracker.ContainsKey(item.uid.Value))
@@ -212,7 +212,7 @@ namespace Oxide.Plugins
             if (player == null) return null;
             if (prefab.fullName.Contains("ladder.wooden.wall")) {
                 var location = target.entity.transform.position;
-                var gridLocation = MapHelper.PositionToGrid(location);
+                var gridLocation = MapHelper.PositionToString(location);
 
                 var ownerID = target.entity.OwnerID;
 
